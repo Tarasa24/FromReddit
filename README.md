@@ -64,7 +64,7 @@ CHANNEL=bobross
 
 #### pip
 
-> This step isn't necessary if using binary
+> This step isn't necessary if using the executable
 
 ```
 pip install -r requirements.txt
