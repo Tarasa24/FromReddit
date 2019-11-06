@@ -7,12 +7,17 @@ from pathlib import Path
 
 
 def parsemsg(s):
-  s = s[1:]
-  command = s.split(" ")[1]
-  nick = s[:s.find("!")]
-  message = s[s.find(":") + 1:].replace("\r\n", "")
+  if s[0] is ":":
+    s = s[1:]
+    command = s.split(" ")[1]
+    nick = s[:s.find("!")]
+    message = s[s.find(":") + 1:].replace("\r\n", "")
 
-  return (nick, command, message)
+    return (nick, command, message)
+  else: # Ping edge case
+    command = s.split(" ")[0]
+
+    return (None, command, None)
 
 
 def send_data(command):
