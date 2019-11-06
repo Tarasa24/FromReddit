@@ -71,21 +71,27 @@ print(" > Twitch IRC connected")
 history = [] # Array holding the history of pervious posts
 
 print(" > Listening for new messages")
-while True:
-  try:
-    buffer = IRC.recv(1024)
-    msg = parsemsg(buffer.decode())
-    if msg[1] == "PING":
-      send_data("PONG tmi.twitch.tv\r\n")  # Answer with pong as per RFC 1459
-    elif msg[1] == "PRIVMSG":
-      print(msg[0] + ": " + msg[2])
-      if msg[2] == "!question":
-        random = None
-        while True:
-          random = reddit.subreddit("askreddit").random()
-          if random.id not in history:
-            history.append(random.id)
-            break
-        send_msg("\"{}\"".format(random.title))
-  except BlockingIOError:
-    pass
+try:
+  while True:
+    try:
+      buffer = IRC.recv(1024)
+      msg = parsemsg(buffer.decode())
+      if msg[1] == "PING":
+        send_data("PONG tmi.twitch.tv\r\n")  # Answer with pong as per RFC 1459
+      elif msg[1] == "PRIVMSG":
+        print(msg[0] + ": " + msg[2])
+        if msg[2] == "!question":
+          random = None
+          while True:
+            random = reddit.subreddit("askreddit").random()
+            if random.id not in history:
+              history.append(random.id)
+              break
+          send_msg("\"{}\"".format(random.title))
+    except BlockingIOError:
+      pass
+except KeyboardInterrupt:
+  print(" > See ya later o/")
+  sleep(3)
+  exit()
+  
