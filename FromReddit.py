@@ -63,6 +63,7 @@ IRC.connect(("irc.twitch.tv", 6667))
 IRC.setblocking(False)
 login(NICK, ACCESS_TOKEN, CHANNEL)
 
+history = [] # Array holding the history of pervious posts
 while True:
   try:
     buffer = IRC.recv(1024)
@@ -72,7 +73,12 @@ while True:
     elif msg[1] == "PRIVMSG":
       print(msg[0] + " -> " + msg[2])
       if msg[2] == "!question":
-        for submission in reddit.subreddit("askreddit").random_rising(limit=1):
-          send_msg("\"{}\"".format(submission.title))
+        random = None
+        while True:
+          random = reddit.subreddit("askreddit").random()
+          if random.id not in history:
+            history.append(random.id)
+            break
+        send_msg("\"{}\"".format(random.title))
   except BlockingIOError:
     pass
