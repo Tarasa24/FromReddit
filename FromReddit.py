@@ -6,14 +6,14 @@ from dotenv import load_dotenv
 from pathlib import Path
 from time import sleep
 import contextlib
-from urllib.parse import urlencode 
-from urllib.request import urlopen 
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
 
-def make_tiny(url): 
-    request_url = ('http://tinyurl.com/api-create.php?' + urlencode({'url':url}))     
-    with contextlib.closing(urlopen(request_url)) as response:                       
-        return response.read().decode('utf-8 ')  
+def make_tiny(url):
+    request_url = ('http://tinyurl.com/api-create.php?' + urlencode({'url': url}))
+    with contextlib.closing(urlopen(request_url)) as response:
+        return response.read().decode('utf-8 ')
 
 
 def parsemsg(s):
@@ -24,7 +24,7 @@ def parsemsg(s):
     message = s[s.find(":") + 1:].replace("\r\n", "")
 
     return (nick, command, message)
-  else: # Ping edge case
+  else:  # Ping edge case
     command = s.split(" ")[0]
 
     return (None, command, None)
@@ -77,7 +77,7 @@ IRC.setblocking(False)
 login(NICK, ACCESS_TOKEN, CHANNEL)
 print(" > Twitch IRC connected")
 
-history = [] # Array holding the history of pervious posts
+history = []  # Array holding the history of pervious posts
 
 print(" > Listening for new messages")
 try:
@@ -96,11 +96,10 @@ try:
             if random.id not in history:
               history.append(random.id)
               break
-          send_msg("\"{}\" ( ⬆️  {}  🗨️  {}  🔗  {} )".format(random.title, random.score, random.num_comments,  make_tiny(random.url)))
+          send_msg("\"{}\" ( ⬆️  {}  🗨️  {}  🔗  {} )".format(random.title, random.score, random.num_comments, make_tiny(random.url)))
     except BlockingIOError:
       pass
 except KeyboardInterrupt:
   print(" > See ya later o/")
   sleep(3)
   exit()
-  
