@@ -5,6 +5,15 @@ from os import getenv, environ
 from dotenv import load_dotenv
 from pathlib import Path
 from time import sleep
+import contextlib
+from urllib.parse import urlencode 
+from urllib.request import urlopen 
+
+
+def make_tiny(url): 
+    request_url = ('http://tinyurl.com/api-create.php?' + urlencode({'url':url}))     
+    with contextlib.closing(urlopen(request_url)) as response:                       
+        return response.read().decode('utf-8 ')  
 
 
 def parsemsg(s):
@@ -87,7 +96,7 @@ try:
             if random.id not in history:
               history.append(random.id)
               break
-          send_msg("\"{}\"".format(random.title))
+          send_msg("\"{}\" ( ⬆️  {}  🗨️  {}  🔗  {} )".format(random.title, random.score, random.num_comments,  make_tiny(random.url)))
     except BlockingIOError:
       pass
 except KeyboardInterrupt:
