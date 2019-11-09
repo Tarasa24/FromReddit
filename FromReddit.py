@@ -1,6 +1,6 @@
 from praw import Reddit
 from socket import socket, AF_INET, SOCK_STREAM
-from sys import argv
+from sys import argv, exit
 from os import getenv, environ
 from dotenv import load_dotenv
 from pathlib import Path
