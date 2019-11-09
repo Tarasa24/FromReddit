@@ -88,7 +88,11 @@ try:
       if msg["command"] == "PING":
         send_data("PONG tmi.twitch.tv\r\n")  # Answer with pong as per RFC 1459
       elif msg["command"] == "PRIVMSG":
+        if msg["message"].find(chr(1) + "ACTION") == 0 and msg["message"][-1] == chr(1):  # /me edge case
+          msg["message"] = "/me " + msg["message"][8:-1]
+
         print(msg["nick"] + ": " + msg["message"])
+
         if msg["message"] == "!question":
           random = None
           while True:
