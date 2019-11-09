@@ -23,11 +23,11 @@ def parsemsg(s):
     nick = s[:s.find("!")]
     message = s[s.find(":") + 1:].replace("\r\n", "")
 
-    return (nick, command, message)
+    return {"nick": nick, "command": command, "message": message}
   else:  # Ping edge case
     command = s.split(" ")[0]
 
-    return (None, command, None)
+    return {"nick": None, "command": command, "message": None}
 
 
 def send_data(command):
@@ -85,11 +85,11 @@ try:
     try:
       buffer = IRC.recv(1024)
       msg = parsemsg(buffer.decode())
-      if msg[1] == "PING":
+      if msg["command"] == "PING":
         send_data("PONG tmi.twitch.tv\r\n")  # Answer with pong as per RFC 1459
-      elif msg[1] == "PRIVMSG":
-        print(msg[0] + ": " + msg[2])
-        if msg[2] == "!question":
+      elif msg["command"] == "PRIVMSG":
+        print(msg["nick"] + ": " + msg["message"])
+        if msg["message"] == "!question":
           random = None
           while True:
             random = reddit.subreddit("askreddit").random()
