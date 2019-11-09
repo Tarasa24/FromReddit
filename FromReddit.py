@@ -11,9 +11,9 @@ from urllib.request import urlopen
 
 
 def make_tiny(url):
-    request_url = ('http://tinyurl.com/api-create.php?' + urlencode({'url': url}))
-    with contextlib.closing(urlopen(request_url)) as response:
-        return response.read().decode('utf-8 ')
+  request_url = ('http://tinyurl.com/api-create.php?' + urlencode({'url': url}))
+  with contextlib.closing(urlopen(request_url)) as response:
+    return response.read().decode('utf-8 ')
 
 
 def parsemsg(s):
@@ -31,18 +31,18 @@ def parsemsg(s):
 
 
 def send_data(command):
-    IRC.send((command + "\n").encode())
+  IRC.send((command + "\n").encode())
 
 
 def login(nickname, password, channel):
-    send_data("PASS " + password)
-    send_data("NICK " + nickname)
-    send_data("JOIN #%s" % channel)
+  send_data("PASS " + password)
+  send_data("NICK " + nickname)
+  send_data("JOIN #%s" % channel)
 
 
 def send_msg(msg):
-    IRC.send(("PRIVMSG #{} : {}\n".format(CHANNEL, msg)).encode())
-    print(NICK + ": " + msg)
+  IRC.send(("PRIVMSG #{} : {}\n".format(CHANNEL, msg)).encode())
+  print(NICK + ": " + msg)
 
 
 def getRedditPost(history):
@@ -50,13 +50,14 @@ def getRedditPost(history):
   for random in askReddit.random_rising(limit=1000):
     if random.id not in history and random.num_comments >= 20:
       return random
-  
+
   if len(history) % 4 == 0:
     for random in askReddit.hot(limit=1000):
       if random.id not in history and not random.stickied:
         return random
   else:
     return askReddit.random()
+
 
 # Check arguments or .env
 if len(argv) != 6:
