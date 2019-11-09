@@ -110,9 +110,14 @@ try:
           random = getRedditPost(history)
           history.append(random.id)
           send_msg("\"{}\" ( ⬆️  {}  🗨️  {}  🔗  {} )".format(random.title, random.score, random.num_comments, make_tiny(random.url)))
+        elif msg["message"] == "!author":
+          send_msg("Made with <3 by @Tarasa24 https://github.com/Tarasa24")
     except BlockingIOError:
       pass
 except KeyboardInterrupt:
+  if len(history) > 10:
+    send_msg("Shameless self-promotion https://github.com/Tarasa24/FromReddit OpieOP")
   print(" > See ya later o/")
   sleep(3)
+  send_msg("@{} signing off o/".format(NICK))
   exit()
