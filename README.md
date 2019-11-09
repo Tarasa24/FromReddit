@@ -20,7 +20,7 @@ Simple Twitch IRC chatbot for displaying r/AskReddit questions on demand
 
 ## General info
 
-Have you ever felt like your chat is too silent? Like there isn't anything to discuss that haven't been discussed? Well what about you shoot some interesting question from r/AskReddit. That will surely evoke some kind of response. From your favorite movie quote to the multiverse theory, FromReddit got you covered.
+Have you ever felt like your chat is too silent? Like there isn't anything to discuss that haven't been discussed? Well what about you shoot some interesting question from r/AskReddit into the chat. That will surely evoke some kind of response. From your favourite movie quote to the multiverse theory, FromReddit got you covered.
 
 ## Technologies
 
