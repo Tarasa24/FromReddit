@@ -45,6 +45,19 @@ def send_msg(msg):
     print(NICK + ": " + msg)
 
 
+def getRedditPost(history):
+  askReddit = reddit.subreddit("askreddit")
+  for random in askReddit.random_rising(limit=1000):
+    if random.id not in history and random.num_comments >= 20:
+      return random
+  
+  if len(history) % 4 == 0:
+    for random in askReddit.hot(limit=1000):
+      if random.id not in history and not random.stickied:
+        return random
+  else:
+    return askReddit.random()
+
 # Check arguments or .env
 if len(argv) != 6:
   env_path = Path('.') / '.env'
@@ -94,12 +107,8 @@ try:
         print(msg["nick"] + ": " + msg["message"])
 
         if msg["message"] == "!question":
-          random = None
-          while True:
-            random = reddit.subreddit("askreddit").random()
-            if random.id not in history:
-              history.append(random.id)
-              break
+          random = getRedditPost(history)
+          history.append(random.id)
           send_msg("\"{}\" ( ⬆️  {}  🗨️  {}  🔗  {} )".format(random.title, random.score, random.num_comments, make_tiny(random.url)))
     except BlockingIOError:
       pass
