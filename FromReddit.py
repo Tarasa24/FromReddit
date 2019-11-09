@@ -1,6 +1,6 @@
 from praw import Reddit
 from socket import socket, AF_INET, SOCK_STREAM
-from sys import argv
+from sys import argv, exit
 from os import getenv, environ
 from dotenv import load_dotenv
 from pathlib import Path
@@ -11,9 +11,9 @@ from urllib.request import urlopen
 
 
 def make_tiny(url):
-    request_url = ('http://tinyurl.com/api-create.php?' + urlencode({'url': url}))
-    with contextlib.closing(urlopen(request_url)) as response:
-        return response.read().decode('utf-8 ')
+  request_url = ('http://tinyurl.com/api-create.php?' + urlencode({'url': url}))
+  with contextlib.closing(urlopen(request_url)) as response:
+    return response.read().decode('utf-8 ')
 
 
 def parsemsg(s):
@@ -23,26 +23,40 @@ def parsemsg(s):
     nick = s[:s.find("!")]
     message = s[s.find(":") + 1:].replace("\r\n", "")
 
-    return (nick, command, message)
+    return {"nick": nick, "command": command, "message": message}
   else:  # Ping edge case
     command = s.split(" ")[0]
 
-    return (None, command, None)
+    return {"nick": None, "command": command, "message": None}
 
 
 def send_data(command):
-    IRC.send((command + "\n").encode())
+  IRC.send((command + "\n").encode())
 
 
 def login(nickname, password, channel):
-    send_data("PASS " + password)
-    send_data("NICK " + nickname)
-    send_data("JOIN #%s" % channel)
+  send_data("PASS " + password)
+  send_data("NICK " + nickname)
+  send_data("JOIN #%s" % channel)
 
 
 def send_msg(msg):
-    IRC.send(("PRIVMSG #{} : {}\n".format(CHANNEL, msg)).encode())
-    print(NICK + ": " + msg)
+  IRC.send(("PRIVMSG #{} : {}\n".format(CHANNEL, msg)).encode())
+  print(NICK + ": " + msg)
+
+
+def getRedditPost(history):
+  askReddit = reddit.subreddit("askreddit")
+  for random in askReddit.random_rising(limit=1000):
+    if random.id not in history and random.num_comments >= 20:
+      return random
+
+  if len(history) % 4 == 0:
+    for random in askReddit.hot(limit=1000):
+      if random.id not in history and not random.stickied:
+        return random
+  else:
+    return askReddit.random()
 
 
 # Check arguments or .env
@@ -85,21 +99,26 @@ try:
     try:
       buffer = IRC.recv(1024)
       msg = parsemsg(buffer.decode())
-      if msg[1] == "PING":
+      if msg["command"] == "PING":
         send_data("PONG tmi.twitch.tv\r\n")  # Answer with pong as per RFC 1459
-      elif msg[1] == "PRIVMSG":
-        print(msg[0] + ": " + msg[2])
-        if msg[2] == "!question":
-          random = None
-          while True:
-            random = reddit.subreddit("askreddit").random()
-            if random.id not in history:
-              history.append(random.id)
-              break
+      elif msg["command"] == "PRIVMSG":
+        if msg["message"].find(chr(1) + "ACTION") == 0 and msg["message"][-1] == chr(1):  # /me edge case
+          msg["message"] = "/me " + msg["message"][8:-1]
+
+        print(msg["nick"] + ": " + msg["message"])
+
+        if msg["message"] == "!question":
+          random = getRedditPost(history)
+          history.append(random.id)
           send_msg("\"{}\" ( ⬆️  {}  🗨️  {}  🔗  {} )".format(random.title, random.score, random.num_comments, make_tiny(random.url)))
+        elif msg["message"] == "!author":
+          send_msg("Made with <3 by @Tarasa24 https://github.com/Tarasa24")
     except BlockingIOError:
       pass
 except KeyboardInterrupt:
+  if len(history) > 10:
+    send_msg("Shameless self-promotion https://github.com/Tarasa24/FromReddit OpieOP")
   print(" > See ya later o/")
   sleep(3)
+  send_msg("@{} signing off o/".format(NICK))
   exit()
