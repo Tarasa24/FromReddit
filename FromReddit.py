@@ -1,13 +1,24 @@
 from praw import Reddit
 from socket import socket, AF_INET, SOCK_STREAM
-from sys import argv, exit
-from os import getenv, environ
-from dotenv import load_dotenv
+from sys import exit
+from os import path
+import configparser
 from pathlib import Path
-from time import sleep
+from time import sleep, time
 import contextlib
 from urllib.parse import urlencode
 from urllib.request import urlopen
+import atexit
+from random import shuffle
+
+
+def signoff(history):
+  if history >= 10:
+    send_msg("Shameless self-promotion https://github.com/Tarasa24/FromReddit OpieOP")
+  print(" > Served {} question(s)".format(history))
+  print(" > See ya later o/")
+  sleep(3)
+  exit()
 
 
 def make_tiny(url):
@@ -45,37 +56,46 @@ def send_msg(msg):
   print(NICK + ": " + msg)
 
 
-def getRedditPost(history):
-  askReddit = reddit.subreddit("askreddit")
-  for random in askReddit.random_rising(limit=1000):
-    if random.id not in history and random.num_comments >= 20:
+def getRedditPost(pool):
+  for random in pool:
+    if random.num_comments >= 20:
       return random
-
-  if len(history) % 4 == 0:
-    for random in askReddit.hot(limit=1000):
-      if random.id not in history and not random.stickied:
-        return random
   else:
     return askReddit.random()
 
 
-# Check arguments or .env
-if len(argv) != 6:
-  env_path = Path('.') / '.env'
-  load_dotenv(dotenv_path=env_path)
-  for e in ["CLIENTID", "CLIENTSEC", "NICK", "ACCESS_TOKEN", "CHANNEL"]:
-    if e not in environ or getenv(e) is "":
-      print('> Incorrect number of arguments or .env not configured')
-      sleep(3)
-      exit()
+config = configparser.ConfigParser()
+ini_path = Path('.') / 'conf.ini'
+if not path.isfile(ini_path):
+  print('> Missing configuration file')
+  sleep(3)
+  exit()
+
+config.read(ini_path)
+configDict = {}
+for e in ["CLIENTID", "CLIENTSEC", "NICK", "ACCESS_TOKEN", "CHANNEL"]:
+  def die(e):
+    print('> Missing field {} in conf.ini'.format(e))
+    sleep(3)
+    exit()
+  reddit = dict(config.items('Reddit'))
+  twitch = dict(config.items('Twitch'))
+  misc = dict(config.items('Misc'))
+  configDict = {**reddit, **twitch, **misc}
+  if e.lower() not in configDict:
+    die(e)
+  elif configDict.get(e.lower()) == "":
+    die(e)
 
 # Set all the variables necessary to connect to Reddit
-CLIENTID = getenv("CLIENTID") or argv[1]
-CLIENTSEC = getenv("CLIENTSEC") or argv[2]
+CLIENTID = configDict.get("CLIENTID".lower())
+CLIENTSEC = configDict.get("CLIENTSEC".lower())
 # As well as Twitch IRC
-NICK = getenv("NICK") or argv[3]
-ACCESS_TOKEN = getenv("ACCESS_TOKEN") or argv[4]
-CHANNEL = getenv("CHANNEL") or argv[5]
+NICK = configDict.get("NICK".lower())
+ACCESS_TOKEN = configDict.get("ACCESS_TOKEN".lower())
+CHANNEL = configDict.get("CHANNEL".lower())
+# Misc
+TIMEOUT = int(configDict.get("TIMEOUT".lower()))
 print(" > Variables loaded")
 
 # Connect to Reddit api
@@ -84,6 +104,12 @@ reddit = Reddit(client_id=CLIENTID,
                 user_agent="windows:FromReddit(https://github.com/Tarasa24/FromReddit):v0.1 (by /u/Tarasa24_CZE)")
 print(" > Praw initiliazed")
 
+pool = []
+askReddit = reddit.subreddit("askreddit")
+pool = list(askReddit.hot(limit=500)) + list(askReddit.random_rising(limit=500))
+shuffle(pool)
+print(" > Pool of {} questions prepared".format(len(pool)))
+
 # Open up a socket and login
 IRC = socket(AF_INET, SOCK_STREAM)
 IRC.connect(("irc.twitch.tv", 6667))
@@ -91,11 +117,14 @@ IRC.setblocking(False)
 login(NICK, ACCESS_TOKEN, CHANNEL)
 print(" > Twitch IRC connected")
 
-history = []  # Array holding the history of pervious posts
+history = 0  # Questions count
+last = 0  # Last request timestamp
+atexit.register(signoff, history)
 
 print(" > Listening for new messages")
 try:
   while True:
+    sleep(0.1)
     try:
       buffer = IRC.recv(1024)
       msg = parsemsg(buffer.decode())
@@ -108,17 +137,20 @@ try:
         print(msg["nick"] + ": " + msg["message"])
 
         if msg["message"] == "!question":
-          random = getRedditPost(history)
-          history.append(random.id)
-          send_msg("\"{}\" ( ⬆️  {}  🗨️  {}  🔗  {} )".format(random.title, random.score, random.num_comments, make_tiny(random.url)))
+          if (last + TIMEOUT <= time()):
+            random = getRedditPost(pool)
+            pool.remove(random)
+            history += 1
+            last = time()
+            atexit.unregister(signoff)
+            atexit.register(signoff, history)
+
+            send_msg("\"{}\" ( ⬆️  {}  🗨️  {}  🔗  {} )".format(random.title, random.score, random.num_comments, make_tiny(random.url)))
+          else:
+            print(" > {} has hit the timeout, not responding for another {}s".format(msg["nick"], round((last + TIMEOUT) - time())))
         elif msg["message"] == "!author":
           send_msg("Made with <3 by @Tarasa24 https://github.com/Tarasa24")
     except BlockingIOError:
       pass
 except KeyboardInterrupt:
-  if len(history) > 10:
-    send_msg("Shameless self-promotion https://github.com/Tarasa24/FromReddit OpieOP")
-  print(" > See ya later o/")
-  sleep(3)
-  send_msg("@{} signing off o/".format(NICK))
   exit()
