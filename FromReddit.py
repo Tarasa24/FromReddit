@@ -4,7 +4,7 @@ from sys import exit
 from os import path
 import configparser
 from pathlib import Path
-from time import sleep
+from time import sleep, time
 import contextlib
 from urllib.parse import urlencode
 from urllib.request import urlopen
@@ -80,7 +80,8 @@ for e in ["CLIENTID", "CLIENTSEC", "NICK", "ACCESS_TOKEN", "CHANNEL"]:
     exit()
   reddit = dict(config.items('Reddit'))
   twitch = dict(config.items('Twitch'))
-  configDict = {**reddit, **twitch}
+  misc = dict(config.items('Misc'))
+  configDict = {**reddit, **twitch, **misc}
   if e.lower() not in configDict:
     die(e)
   elif configDict.get(e.lower()) == "":
@@ -93,6 +94,8 @@ CLIENTSEC = configDict.get("CLIENTSEC".lower())
 NICK = configDict.get("NICK".lower())
 ACCESS_TOKEN = configDict.get("ACCESS_TOKEN".lower())
 CHANNEL = configDict.get("CHANNEL".lower())
+# Misc
+TIMEOUT = int(configDict.get("TIMEOUT".lower()))
 print(" > Variables loaded")
 
 # Connect to Reddit api
@@ -115,6 +118,7 @@ login(NICK, ACCESS_TOKEN, CHANNEL)
 print(" > Twitch IRC connected")
 
 history = 0
+last = 0
 atexit.register(signoff, history)
 
 print(" > Listening for new messages")
@@ -133,13 +137,17 @@ try:
         print(msg["nick"] + ": " + msg["message"])
 
         if msg["message"] == "!question":
-          random = getRedditPost(pool)
-          pool.remove(random)
-          history += 1
-          atexit.unregister(signoff)
-          atexit.register(signoff, history)
-          
-          send_msg("\"{}\" ( ⬆️  {}  🗨️  {}  🔗  {} )".format(random.title, random.score, random.num_comments, make_tiny(random.url)))
+          if (last + TIMEOUT <= time()):
+            random = getRedditPost(pool)
+            pool.remove(random)
+            history += 1
+            last = time()
+            atexit.unregister(signoff)
+            atexit.register(signoff, history)
+
+            send_msg("\"{}\" ( ⬆️  {}  🗨️  {}  🔗  {} )".format(random.title, random.score, random.num_comments, make_tiny(random.url)))
+          else:
+            print(" > {} has hit the timeout, not responding for another {}s".format(msg["nick"], round((last + TIMEOUT) - time())))
         elif msg["message"] == "!author":
           send_msg("Made with <3 by @Tarasa24 https://github.com/Tarasa24")
     except BlockingIOError:
