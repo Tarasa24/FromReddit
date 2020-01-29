@@ -96,6 +96,7 @@ history = []  # Array holding the history of pervious posts
 print(" > Listening for new messages")
 try:
   while True:
+    sleep(0.1)
     try:
       buffer = IRC.recv(1024)
       msg = parsemsg(buffer.decode())
