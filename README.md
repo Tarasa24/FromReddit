@@ -14,7 +14,7 @@ Simple Twitch IRC chatbot for displaying r/AskReddit questions on demand
 - [Requirements and Setup](#requirements-and-setup)
   - [Reddit](#Reddit)
   - [Twitch](#Twitch)
-  - [.env](<#.env optional>)
+  - [conf.ini](#conf.ini)
   - [pip](#pip)
 - [Execution](#execution)
 
@@ -27,7 +27,6 @@ Have you ever felt like your chat is too silent? Like there isn't anything to di
 Project is created with:
 
 - <a href="https://github.com/praw-dev/praw" target="_blank">Python Reddit API Wrapper</a>
-- <a href="https://github.com/theskumar/python-dotenv" target="_blank">python-dotenv</a>
 
 ## Requirements and Setup
 
@@ -50,16 +49,22 @@ CLIENTSEC = "qjx4d77aFSgsO7bHKMeOtmq4GP0"
 Head over to my go to [twitch oauth generator](https://twitchtokengenerator.com/quick/p7xAbpkovt), log in with yours (alternatively your bots) account and authorize. Expected result should look something like this and the part you are interested in is the `ACCESS TOKEN`.
 ![twitchtokengenerator token](https://i.imgur.com/ye7dMEl.png)
 
-#### .env (optional)
+#### conf.ini
 
-If you do not wish to specify arguments on every startup, you can conveniently specify all of them in the `.env` file. Example below:
+FromReddit requires to have all the necessary data to be stated in the `conf.ini` file as shown below. Said file can be edited either manually, or using the installer.
 
-```.env
+```ini
+[Reddit]
 CLIENTID=Gz4oQcPJ3Tj03A
 CLIENTSEC=qjx4d77aFSgsO7bHKMeOtmq4GP0
+
+[Twitch]
 NICK=FromReddit
 PASS=oauth:aBR6kSj2OdxdwR6zcQXlEG6M4ZdNer
 CHANNEL=bobross
+
+[Misc]
+TIMEOUT=10
 ```
 
 #### pip
@@ -73,15 +78,11 @@ pip install -r requirements.txt
 ## Execution
 
 ```
-py FromReddit.py <CLIENTID> <CLIENTSEC> <NICK> <ACCESS_TOKEN> <CHANNEL>
-or
-FromReddit.exe <CLIENTID> <CLIENTSEC> <NICK> <ACCESS_TOKEN> <CHANNEL>
-```
-
-When using .env:
-
-```
 py FromReddit.py
-or
+```
+
+or run
+
+```
 FromReddit.exe
 ```
