@@ -117,8 +117,8 @@ IRC.setblocking(False)
 login(NICK, ACCESS_TOKEN, CHANNEL)
 print(" > Twitch IRC connected")
 
-history = 0
-last = 0
+history = 0  # Questions count
+last = 0  # Last request timestamp
 atexit.register(signoff, history)
 
 print(" > Listening for new messages")
