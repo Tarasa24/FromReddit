@@ -8,6 +8,17 @@ from time import sleep
 import contextlib
 from urllib.parse import urlencode
 from urllib.request import urlopen
+import atexit
+from random import shuffle
+
+
+def signoff(history):
+  if history >= 10:
+    send_msg("Shameless self-promotion https://github.com/Tarasa24/FromReddit OpieOP")
+  print(" > Served {} question(s)".format(history))
+  print(" > See ya later o/")
+  sleep(3)
+  exit()
 
 
 def make_tiny(url):
@@ -45,16 +56,10 @@ def send_msg(msg):
   print(NICK + ": " + msg)
 
 
-def getRedditPost(history):
-  askReddit = reddit.subreddit("askreddit")
-  for random in askReddit.random_rising(limit=1000):
-    if random.id not in history and random.num_comments >= 20:
+def getRedditPost(pool):
+  for random in pool:
+    if random.num_comments >= 20:
       return random
-
-  if len(history) % 4 == 0:
-    for random in askReddit.hot(limit=1000):
-      if random.id not in history and not random.stickied:
-        return random
   else:
     return askReddit.random()
 
@@ -84,6 +89,12 @@ reddit = Reddit(client_id=CLIENTID,
                 user_agent="windows:FromReddit(https://github.com/Tarasa24/FromReddit):v0.1 (by /u/Tarasa24_CZE)")
 print(" > Praw initiliazed")
 
+pool = []
+askReddit = reddit.subreddit("askreddit")
+pool = list(askReddit.hot(limit=500)) + list(askReddit.random_rising(limit=500))
+shuffle(pool)
+print(" > Pool of {} questions prepared".format(len(pool)))
+
 # Open up a socket and login
 IRC = socket(AF_INET, SOCK_STREAM)
 IRC.connect(("irc.twitch.tv", 6667))
@@ -91,7 +102,8 @@ IRC.setblocking(False)
 login(NICK, ACCESS_TOKEN, CHANNEL)
 print(" > Twitch IRC connected")
 
-history = []  # Array holding the history of pervious posts
+history = 0
+atexit.register(signoff, history)
 
 print(" > Listening for new messages")
 try:
@@ -109,17 +121,16 @@ try:
         print(msg["nick"] + ": " + msg["message"])
 
         if msg["message"] == "!question":
-          random = getRedditPost(history)
-          history.append(random.id)
+          random = getRedditPost(pool)
+          pool.remove(random)
+          history += 1
+          atexit.unregister(signoff)
+          atexit.register(signoff, history)
+          
           send_msg("\"{}\" ( ⬆️  {}  🗨️  {}  🔗  {} )".format(random.title, random.score, random.num_comments, make_tiny(random.url)))
         elif msg["message"] == "!author":
           send_msg("Made with <3 by @Tarasa24 https://github.com/Tarasa24")
     except BlockingIOError:
       pass
 except KeyboardInterrupt:
-  if len(history) > 10:
-    send_msg("Shameless self-promotion https://github.com/Tarasa24/FromReddit OpieOP")
-  print(" > See ya later o/")
-  sleep(3)
-  send_msg("@{} signing off o/".format(NICK))
   exit()
