@@ -1,5 +1,7 @@
 /output
-/build
+/build/compile.iss
+/build/create_installer.sh
+/build/out
 
 /.vscode
 
