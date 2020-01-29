@@ -1,8 +1,8 @@
 from praw import Reddit
 from socket import socket, AF_INET, SOCK_STREAM
-from sys import argv, exit
-from os import getenv, environ
-from dotenv import load_dotenv
+from sys import exit
+from os import path
+import configparser
 from pathlib import Path
 from time import sleep
 import contextlib
@@ -64,23 +64,35 @@ def getRedditPost(pool):
     return askReddit.random()
 
 
-# Check arguments or .env
-if len(argv) != 6:
-  env_path = Path('.') / '.env'
-  load_dotenv(dotenv_path=env_path)
-  for e in ["CLIENTID", "CLIENTSEC", "NICK", "ACCESS_TOKEN", "CHANNEL"]:
-    if e not in environ or getenv(e) is "":
-      print('> Incorrect number of arguments or .env not configured')
-      sleep(3)
-      exit()
+config = configparser.ConfigParser()
+ini_path = Path('.') / 'conf.ini'
+if not path.isfile(ini_path):
+  print('> Missing configuration file')
+  sleep(3)
+  exit()
+
+config.read(ini_path)
+configDict = {}
+for e in ["CLIENTID", "CLIENTSEC", "NICK", "ACCESS_TOKEN", "CHANNEL"]:
+  def die(e):
+    print('> Missing field {} in conf.ini'.format(e))
+    sleep(3)
+    exit()
+  reddit = dict(config.items('Reddit'))
+  twitch = dict(config.items('Twitch'))
+  configDict = {**reddit, **twitch}
+  if e.lower() not in configDict:
+    die(e)
+  elif configDict.get(e.lower()) == "":
+    die(e)
 
 # Set all the variables necessary to connect to Reddit
-CLIENTID = getenv("CLIENTID") or argv[1]
-CLIENTSEC = getenv("CLIENTSEC") or argv[2]
+CLIENTID = configDict.get("CLIENTID".lower())
+CLIENTSEC = configDict.get("CLIENTSEC".lower())
 # As well as Twitch IRC
-NICK = getenv("NICK") or argv[3]
-ACCESS_TOKEN = getenv("ACCESS_TOKEN") or argv[4]
-CHANNEL = getenv("CHANNEL") or argv[5]
+NICK = configDict.get("NICK".lower())
+ACCESS_TOKEN = configDict.get("ACCESS_TOKEN".lower())
+CHANNEL = configDict.get("CHANNEL".lower())
 print(" > Variables loaded")
 
 # Connect to Reddit api
